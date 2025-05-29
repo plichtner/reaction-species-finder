@@ -3,6 +3,63 @@ import hyperdiv as hd
 from rxn3_lib_v2 import calculate_reaction, get_matching_aq_species
 
 
+class floating_footer(hd.box):
+    position = hd.Prop(
+        hd.CSSField(
+            "position",
+            hd.OneOf("relative", "absolute", "fixed")
+        ),
+        "relative"
+    )
+
+    bottom = hd.Prop(
+    	hd.CSSField(
+            "bottom",
+            hd.Any
+        ),
+        "0px"
+    )
+
+    left = hd.Prop(
+    	hd.CSSField(
+            "left",
+            hd.Any
+        ),
+        "0px"
+    )
+
+    right = hd.Prop(
+    	hd.CSSField(
+            "right",
+            hd.Any
+        ),
+        "0px"
+    )
+
+
+def as_plfotran_file(reaction_result):
+	return f'''
+#=========================== chemistry ========================================
+CHEMISTRY
+  PRIMARY_SPECIES
+    { '\n    '.join(reaction_result['primary_species']) }
+  END
+
+  SECONDARY_SPECIES
+  	{ '\n    '.join(reaction_result['secondary_species']) }
+  END
+
+  PASSIVE_GAS_SPECIES
+  	{ '\n    '.join(reaction_result['gas_species']) }
+  END
+
+  MINERALS
+  	{ '\n    '.join(reaction_result['mineral_species']) }
+  END
+
+END'''
+
+
 def main():
 
 	state = hd.state(
@@ -10,12 +67,33 @@ def main():
 		primary_species=["H2O"],
 	)
 
+	if state.reaction_result is not None:
+		pflotran_dialog = hd.dialog("PFLOTRAN Input File")
+		with pflotran_dialog:
+			hd.markdown(f'''
+```
+{ as_plfotran_file(state.reaction_result) }
+```
+''')
+
+		with floating_footer(position="fixed", justify="end", direction="horizontal", padding=1):
+			pflotran_download_button = hd.button("PFLOTRAN", prefix_icon="download")
+			if pflotran_download_button.clicked:
+				pflotran_dialog.opened = True
+
 	help_dialog = hd.dialog("About")
 	with help_dialog:
-		hd.text("Reaction Species Finder is a web tool for finding secondary species, gases and minerals given a set of primary species.")
-		hd.text("Use the search for species input to select a set of primary species for your system of interest. The secondary species, gases and minerals will appear to the right.")
-		hd.text("Click the download button to download your results in a PFLOTRAN input file.")
-		hd.text("Built in python using Hyperdiv.")
+		hd.markdown('''
+**Reaction Species Finder** is a web tool for finding secondary species, 
+  gases and minerals given a set of primary species.
+
+Use the **Search for Species** input to select a set of primary species for your system of interest. The secondary species, gases and minerals will appear to the right.
+
+Click the **download button** to download your results in a **[PFLOTRAN](https://www.pflotran.org)** input file.
+
+**Reaction Species Finder** is built with Python 3.13.3 using **[Hyperdiv](https://hyperdiv.io)**.
+
+''')
 
 	with hd.box():
 
