@@ -252,7 +252,7 @@ if __name__ == '__main__':
   print("END")
   print()
 
-  print(f"For {len(result['primary_species'])} primary species, found {len(result['secondary_species'])} secondary species, {len(result['gas_species'])} gases, and {len(result['mineral_species'])} minerals.")
+  print(f"for {len(result['primary_species'])} primary species, found {len(result['secondary_species'])} secondary species, {len(result['gas_species'])} gases, and {len(result['mineral_species'])} minerals.")
 
   print()
   print(f"Saving to file chem.out...")
@@ -264,25 +264,21 @@ if __name__ == '__main__':
     for spec in result['primary_species']:
       print(f'    {spec}', file=file)
     print("  END", file=file)
-    print("", file=file)
 
     print("  SECONDARY_SPECIES", file=file)
     for spec in result['secondary_species']:
       print(f'    {spec}', file=file)
     print("  END", file=file)
-    print("", file=file)
 
     print("  PASSIVE_GAS_SPECIES", file=file)
     for spec in result['gas_species']:
       print(f'    {spec}', file=file)
     print("  END", file=file)
-    print("", file=file)
 
     print("  MINERALS", file=file)
     for spec in result['mineral_species']:
       print(f'    {spec}', file=file)
     print("  END", file=file)
-    print("", file=file)
     print("END", file=file)
 
   print("done")
