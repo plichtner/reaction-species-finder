@@ -70,11 +70,7 @@ def main():
 	if state.reaction_result is not None:
 		pflotran_dialog = hd.dialog("PFLOTRAN Input File")
 		with pflotran_dialog:
-			hd.markdown(f'''
-```
-{ as_plfotran_file(state.reaction_result) }
-```
-''')
+			hd.markdown(f'''```{ as_plfotran_file(state.reaction_result) }''')
 
 		with floating_footer(position="fixed", justify="end", direction="horizontal", padding=1):
 			pflotran_download_button = hd.button("PFLOTRAN", prefix_icon="download")
