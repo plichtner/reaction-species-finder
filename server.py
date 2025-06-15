@@ -36,6 +36,14 @@ class floating_footer(hd.box):
         "0px"
     )
 
+    z_index = hd.Prop(
+    	hd.CSSField(
+    		"z-index",
+    		hd.Any
+    	),
+    	"10"
+    )
+
 
 def as_plfotran_file(reaction_result):
 	return f'''
