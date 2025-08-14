@@ -95,7 +95,9 @@ Use the **Search for Species** input to select a set of primary species for your
 
 Click the **download button** to download your results in a **[PFLOTRAN](https://www.pflotran.org)** input file.
 
-**Reaction Species Finder** is built with Python 3.13.3 using **[Hyperdiv](https://hyperdiv.io)**.
+**Reaction Species Finder** is built by Benny and Peter Lichtner with Python 3.13.3 using **[Hyperdiv](https://hyperdiv.io)**.
+
+To clone the source code or leave a comment, visit [our github repo](https://github.com/plichtner/reaction-species-finder).
 
 ''')
 
