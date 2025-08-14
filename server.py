@@ -101,6 +101,7 @@ Click the **download button** to download your results in a **[PFLOTRAN](https:/
 
 	with hd.box():
 
+		# Header
 		with hd.box(direction="horizontal", background_color="#ccc", justify="space-between", align="center", padding=1):
 			hd.h1("Reaction Species Finder")
 
@@ -108,38 +109,60 @@ Click the **download button** to download your results in a **[PFLOTRAN](https:/
 			if help_button.clicked:
 				help_dialog.opened = True
 
+		# Body
 		with hd.box(direction="horizontal", margin=2, gap=2):
-			with hd.box(gap=1):
-				# primary_species = hd.text_input(value="Fe++,Fe+++,H+,H2O")
-				hd.h3("Search for species:")
-				species_query = hd.text_input(placeholder="E.g.: Fe++, OH-, U+++", value="")
 
-				matching_species = []
-				if len(species_query.value) > 1:
-					matching_species = get_matching_aq_species(species_query.value)
+			# Search column
+			with hd.box():
+				with hd.box(gap=1, background_color="#eee", padding=1, border_radius=0.4):
+					# primary_species = hd.text_input(value="Fe++,Fe+++,H+,H2O")
+					hd.h3("Add primary species:")
+					species_query = hd.text_input(placeholder="E.g.: Fe++, OH-, U+++", value="")
 
-				if len(matching_species) > 0:
-					with hd.menu() as menu:
-						for i, species in enumerate(matching_species):
-							with hd.scope(i):
-							# print(species)
-								item = hd.menu_item(species)
-								if item.clicked:
-									state.primary_species = state.primary_species + [item.label]
-									species_query.value = ''
-				
+					matching_species = []
+					if len(species_query.value) > 1:
+						matching_species = get_matching_aq_species(species_query.value)
+
+					if len(matching_species) > 0:
+						with hd.menu() as menu:
+							for i, species in enumerate(matching_species):
+								with hd.scope(i):
+								# print(species)
+									item = hd.menu_item(species)
+									if item.clicked:
+										state.primary_species = state.primary_species + [item.label]
+										species_query.value = ''
+			
+			# Primary species column
 			with hd.box(gap=1):
-				hd.h3("Primary Species")
-				
-				for i, species in enumerate(state.primary_species):
-					with hd.scope(i):
-						with hd.card():
-							with hd.hbox(justify="space-between", align="center"):
-								hd.text(species)
-								if species != "H2O":
-									delete = hd.icon_button("trash")
-									if delete.clicked:
-										state.primary_species = [p for p in state.primary_species if p != species]
+				# hd.h3("Primary Species")
+				with hd.box_list():
+					species_list = state.primary_species
+					hd.box_list_item(f"Primary Species ({len(species_list)})", font_weight="bold", background_color="#eee", padding=0.5, border="1px solid #e4e4e7")
+
+					for i, species in enumerate(species_list):
+						with hd.scope(i):
+							
+							if i == (len(species_list) - 1):
+								border_bottom = "1px solid #e4e4e7"
+							else:
+								border_bottom = "none"
+							
+							with hd.box_list_item(padding=0.5, border_top="1px solid #e4e4e7", border_left="1px solid #e4e4e7", border_right="1px solid #e4e4e7", border_bottom=border_bottom):
+								with hd.hbox(justify="space-between", align="center"):
+									hd.text(species)
+									if species != "H2O":
+										delete_button = hd.icon_button("trash")
+										if delete_button.clicked:
+											state.primary_species = [p for p in state.primary_species if p != species]
+
+						# with hd.card():
+						# 	with hd.hbox(justify="space-between", align="center"):
+						# 		hd.text(species)
+						# 		if species != "H2O":
+						# 			delete = hd.icon_button("trash")
+						# 			if delete.clicked:
+						# 				state.primary_species = [p for p in state.primary_species if p != species]
 
 				# with hd.card() as card:
 				#     with hd.hbox(slot=card.header, justify="space-between", align="center"):
@@ -150,46 +173,34 @@ Click the **download button** to download your results in a **[PFLOTRAN](https:/
 			if len(state.primary_species) > 0:
 				state.reaction_result = calculate_reaction(state.primary_species)
 
+			# Results columns
 			if state.reaction_result is not None:
+				hd.divider(vertical=True, spacing=0)
+				
 				with hd.box(gap=1):
-					table_data = dict()
-					table_title = f"Secondary Species ({len(state.reaction_result['secondary_species'])})"
-					table_data[table_title] = sorted(state.reaction_result['secondary_species'])
-					hd.data_table(table_data, rows_per_page=100, show_select_column=False, id_column_name=table_title)
-
-				with hd.box(gap=1):
-					table_data = dict()
-					table_title = f"Passive Gas Species ({len(state.reaction_result['gas_species'])})"
-					table_data[table_title] = sorted(state.reaction_result['gas_species'])
-					hd.data_table(table_data, rows_per_page=100, show_select_column=False, id_column_name=table_title)
+					species_list = sorted(state.reaction_result['secondary_species'])
+					title = f"Secondary Species ({len(species_list)})"
+					species_table(title, species_list)
 
 				with hd.box(gap=1):
-					table_data = dict()
-					table_title = f"Mineral Species ({len(state.reaction_result['mineral_species'])})"
-					table_data[table_title] = sorted(state.reaction_result['mineral_species'])
-					hd.data_table(table_data, rows_per_page=100, show_select_column=False, id_column_name=table_title)
+					species_list = sorted(state.reaction_result['gas_species'])
+					title = f"Passive Gas Species ({len(species_list)})"
+					species_table(title, species_list)
 
-			# with hd.box():
-			# 	primary_species = hd.text_input(value="Fe++,Fe+++,OH-,H2O")
-			# 	submit = hd.button("Calculate secondary species")
-		
-			# 	if submit.clicked:
-			# 		state.reaction_result_right = calculate_reaction(primary_species.value.split(","))
+				with hd.box(gap=1):
+					species_list = sorted(state.reaction_result['mineral_species'])
+					title = f"Mineral Species ({len(species_list)})"
+					species_table(title, species_list)
 
-			# 	if state.reaction_result_right is not None:
-			# 		table_data = dict()
-			# 		table_title = f"Secondary Species ({len(state.reaction_result_right['secondary_species'])})"
-			# 		table_data[table_title] = sorted(state.reaction_result_right['secondary_species'])
-			# 		hd.data_table(table_data, rows_per_page=100)
 
-			# 		table_data = dict()
-			# 		table_title = f"Passive Gas Species ({len(state.reaction_result_right['gas_species'])})"
-			# 		table_data[table_title] = sorted(state.reaction_result_right['gas_species'])
-			# 		hd.data_table(table_data, rows_per_page=100)
-
-			# 		table_data = dict()
-			# 		table_title = f"Mineral Species ({len(state.reaction_result_right['mineral_species'])})"
-			# 		table_data[table_title] = sorted(state.reaction_result_right['mineral_species'])
-			# 		hd.data_table(table_data, rows_per_page=100)
+def species_table(title, species_list):
+	with hd.box_list():
+		hd.box_list_item(title, font_weight="bold", background_color="#eee", padding=0.5, border="1px solid #e4e4e7")
+		for i, species in enumerate(species_list):
+			with hd.scope(i):
+				if i == (len(species_list) - 1):
+					hd.box_list_item(species, padding=0.5, border="1px solid #e4e4e7")
+				else:
+					hd.box_list_item(species, padding=0.5, border_top="1px solid #e4e4e7", border_left="1px solid #e4e4e7", border_right="1px solid #e4e4e7")
 
 hd.run(main)
