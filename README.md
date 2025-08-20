@@ -1,5 +1,7 @@
 # About
 
+Online at http://reactions.gentleplants.com/
+
 **Reaction Species Finder** is a web tool for searching a database (e.g. [hanford.dat](hanford.dat)) to find secondary species, gases and minerals given a set of primary species.
 
 Built by Benny and Peter Lichtner with Python 3.13.3 using **[Hyperdiv](https://hyperdiv.io)**.
