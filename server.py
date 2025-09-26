@@ -78,12 +78,14 @@ def main():
 	if state.reaction_result is not None:
 		pflotran_dialog = hd.dialog("PFLOTRAN Input File")
 		with pflotran_dialog:
+			hd.text("The file below has been copied to your clipboard.", padding_bottom=1)
 			hd.markdown(f'''```{ as_plfotran_file(state.reaction_result) }''')
 
 		with floating_footer(position="fixed", justify="end", direction="horizontal", padding=1):
 			pflotran_download_button = hd.button("PFLOTRAN", prefix_icon="download")
 			if pflotran_download_button.clicked:
 				pflotran_dialog.opened = True
+				hd.clipboard().write(as_plfotran_file(state.reaction_result))
 
 	help_dialog = hd.dialog("About")
 	with help_dialog:
