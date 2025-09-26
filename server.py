@@ -106,7 +106,7 @@ To clone the source code or leave a comment, visit [our github repo](https://git
 	with hd.box():
 
 		# Header
-		with hd.box(direction="horizontal", background_color="#ccc", justify="space-between", align="center", padding=1):
+		with hd.box(direction="horizontal", background_color="neutral-300", justify="space-between", align="center", padding=1):
 			hd.h1("Reaction Species Finder")
 
 			help_button = hd.icon_button(name="question-circle", font_size="28px")
@@ -150,10 +150,10 @@ To clone the source code or leave a comment, visit [our github repo](https://git
 
 
 def search_column(state):
-	with hd.box(gap=1, background_color="#eee", padding=1, border_radius=0.4):
+	with hd.box(gap=1, background_color="neutral-200", padding=1, border_radius=0.4):
 		# primary_species = hd.text_input(value="Fe++,Fe+++,H+,H2O")
 		hd.h3("Add primary species:")
-		species_query = hd.text_input(placeholder="E.g.: Fe++, OH-, U+++", value="")
+		species_query = hd.text_input(placeholder="E.g.: Fe++", value="")
 
 		matching_species = []
 		if len(species_query.value) > 1:
@@ -179,17 +179,17 @@ def search_column(state):
 def primary_species_column(state):
 	with hd.box_list():
 		species_list = state.primary_species
-		hd.box_list_item(f"Primary Species ({len(species_list)})", font_weight="bold", background_color="#eee", padding=0.5, border="1px solid #e4e4e7")
+		hd.box_list_item(f"Primary Species ({len(species_list)})", font_weight="bold", background_color="neutral-200", padding=0.5, border="1px solid neutral-200")
 
 		for i, species in enumerate(species_list):
 			with hd.scope(i):
 				
 				if i == (len(species_list) - 1):
-					border_bottom = "1px solid #e4e4e7"
+					border_bottom = "1px solid neutral-200"
 				else:
 					border_bottom = "none"
 				
-				with hd.box_list_item(padding=0.5, border_top="1px solid #e4e4e7", border_left="1px solid #e4e4e7", border_right="1px solid #e4e4e7", border_bottom=border_bottom):
+				with hd.box_list_item(padding=0.5, border_top="1px solid neutral-200", border_left="1px solid neutral-200", border_right="1px solid neutral-200", border_bottom=border_bottom):
 					with hd.hbox(justify="space-between", align="center"):
 						hd.text(species)
 						if species != "H2O":
@@ -200,12 +200,12 @@ def primary_species_column(state):
 
 def species_table(title, species_list):
 	with hd.box_list():
-		hd.box_list_item(title, font_weight="bold", background_color="#eee", padding=0.5, border="1px solid #e4e4e7")
+		hd.box_list_item(title, font_weight="bold", background_color="neutral-200", padding=0.5, border="1px solid neutral-200")
 		for i, species in enumerate(species_list):
 			with hd.scope(i):
 				if i == (len(species_list) - 1):
-					hd.box_list_item(species, padding=0.5, border="1px solid #e4e4e7")
+					hd.box_list_item(species, padding=0.5, border="1px solid neutral-200")
 				else:
-					hd.box_list_item(species, padding=0.5, border_top="1px solid #e4e4e7", border_left="1px solid #e4e4e7", border_right="1px solid #e4e4e7")
+					hd.box_list_item(species, padding=0.5, border_top="1px solid neutral-200", border_left="1px solid neutral-200", border_right="1px solid neutral-200")
 
 hd.run(main)
