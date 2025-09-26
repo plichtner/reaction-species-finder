@@ -1,6 +1,6 @@
 # About
 
-Online at http://reactions.gentleplants.com/
+Online at https://reactions.gentleplants.com/
 
 **Reaction Species Finder** is a web tool for searching a database (e.g. [hanford.dat](hanford.dat)) to find secondary species, gases and minerals given a set of primary species.
 
