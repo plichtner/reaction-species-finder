@@ -116,83 +116,84 @@ To clone the source code or leave a comment, visit [our github repo](https://git
 
 			# Search column
 			with hd.box():
-				with hd.box(gap=1, background_color="#eee", padding=1, border_radius=0.4):
-					# primary_species = hd.text_input(value="Fe++,Fe+++,H+,H2O")
-					hd.h3("Add primary species:")
-					species_query = hd.text_input(placeholder="E.g.: Fe++, OH-, U+++", value="")
-
-					matching_species = []
-					if len(species_query.value) > 1:
-						matching_species = get_matching_aq_species(species_query.value)
-
-					if len(matching_species) > 0:
-						with hd.menu() as menu:
-							for i, species in enumerate(matching_species):
-								with hd.scope(i):
-								# print(species)
-									item = hd.menu_item(species)
-									if item.clicked:
-										state.primary_species = state.primary_species + [item.label]
-										species_query.value = ''
+				search_column(state)
 			
 			# Primary species column
 			with hd.box(gap=1):
-				# hd.h3("Primary Species")
-				with hd.box_list():
-					species_list = state.primary_species
-					hd.box_list_item(f"Primary Species ({len(species_list)})", font_weight="bold", background_color="#eee", padding=0.5, border="1px solid #e4e4e7")
-
-					for i, species in enumerate(species_list):
-						with hd.scope(i):
-							
-							if i == (len(species_list) - 1):
-								border_bottom = "1px solid #e4e4e7"
-							else:
-								border_bottom = "none"
-							
-							with hd.box_list_item(padding=0.5, border_top="1px solid #e4e4e7", border_left="1px solid #e4e4e7", border_right="1px solid #e4e4e7", border_bottom=border_bottom):
-								with hd.hbox(justify="space-between", align="center"):
-									hd.text(species)
-									if species != "H2O":
-										delete_button = hd.icon_button("trash")
-										if delete_button.clicked:
-											state.primary_species = [p for p in state.primary_species if p != species]
-
-						# with hd.card():
-						# 	with hd.hbox(justify="space-between", align="center"):
-						# 		hd.text(species)
-						# 		if species != "H2O":
-						# 			delete = hd.icon_button("trash")
-						# 			if delete.clicked:
-						# 				state.primary_species = [p for p in state.primary_species if p != species]
-
-				# with hd.card() as card:
-				#     with hd.hbox(slot=card.header, justify="space-between", align="center"):
-				#         hd.text("Settings")
-				#         hd.icon_button("gear")
-				#     hd.text("This card has a header.")
+				primary_species_column(state)
 
 			if len(state.primary_species) > 0:
 				state.reaction_result = calculate_reaction(state.primary_species)
 
 			# Results columns
-			if state.reaction_result is not None:
-				hd.divider(vertical=True, spacing=0)
+			hd.divider(vertical=True, spacing=0)
+			
+			# Secondary species
+			with hd.box(gap=1):
+				species_list = sorted(state.reaction_result['secondary_species'])
+				title = f"Secondary Species ({len(species_list)})"
+				species_table(title, species_list)
+
+			# Gas Species
+			with hd.box(gap=1):
+				species_list = sorted(state.reaction_result['gas_species'])
+				title = f"Passive Gas Species ({len(species_list)})"
+				species_table(title, species_list)
+
+			# Mineral Species
+			with hd.box(gap=1):
+				species_list = sorted(state.reaction_result['mineral_species'])
+				title = f"Mineral Species ({len(species_list)})"
+				species_table(title, species_list)
+
+
+def search_column(state):
+	with hd.box(gap=1, background_color="#eee", padding=1, border_radius=0.4):
+		# primary_species = hd.text_input(value="Fe++,Fe+++,H+,H2O")
+		hd.h3("Add primary species:")
+		species_query = hd.text_input(placeholder="E.g.: Fe++, OH-, U+++", value="")
+
+		matching_species = []
+		if len(species_query.value) > 1:
+			matching_species = get_matching_aq_species(species_query.value)
+
+		matching_species = [
+			species for species in matching_species
+			if (species not in state.primary_species)
+			and (species not in state.reaction_result['secondary_species'])
+		]
+
+		if len(matching_species) > 0:
+			with hd.menu() as menu:
+				for i, species in enumerate(matching_species):
+					with hd.scope(i):
+					# print(species)
+						item = hd.menu_item(species)
+						if item.clicked:
+							state.primary_species = state.primary_species + [item.label]
+							species_query.value = ''
+
+
+def primary_species_column(state):
+	with hd.box_list():
+		species_list = state.primary_species
+		hd.box_list_item(f"Primary Species ({len(species_list)})", font_weight="bold", background_color="#eee", padding=0.5, border="1px solid #e4e4e7")
+
+		for i, species in enumerate(species_list):
+			with hd.scope(i):
 				
-				with hd.box(gap=1):
-					species_list = sorted(state.reaction_result['secondary_species'])
-					title = f"Secondary Species ({len(species_list)})"
-					species_table(title, species_list)
-
-				with hd.box(gap=1):
-					species_list = sorted(state.reaction_result['gas_species'])
-					title = f"Passive Gas Species ({len(species_list)})"
-					species_table(title, species_list)
-
-				with hd.box(gap=1):
-					species_list = sorted(state.reaction_result['mineral_species'])
-					title = f"Mineral Species ({len(species_list)})"
-					species_table(title, species_list)
+				if i == (len(species_list) - 1):
+					border_bottom = "1px solid #e4e4e7"
+				else:
+					border_bottom = "none"
+				
+				with hd.box_list_item(padding=0.5, border_top="1px solid #e4e4e7", border_left="1px solid #e4e4e7", border_right="1px solid #e4e4e7", border_bottom=border_bottom):
+					with hd.hbox(justify="space-between", align="center"):
+						hd.text(species)
+						if species != "H2O":
+							delete_button = hd.icon_button("trash")
+							if delete_button.clicked:
+								state.primary_species = [p for p in state.primary_species if p != species]
 
 
 def species_table(title, species_list):
