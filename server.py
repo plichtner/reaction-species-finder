@@ -102,14 +102,29 @@ def make_pflotran_download_button(state):
 
 
 def update_query_string(state):
-	pass
+	hd.location().go('/', query_args='s=' + ','.join(state.primary_species))
 
 
 def main():
 
+	# parse query args
+	query_args_dict = dict()
+	try:
+		query_args = [arg.split('=') for arg in hd.location().query_args.split('&')]
+		query_args_dict = {
+			arg[0]: arg[1].split(',')
+			for arg in query_args
+		}
+	except Exception as e:
+		pass
+
+	initial_primary_species = query_args_dict['s'] if 's' in query_args_dict else None
+	if initial_primary_species is None:
+		initial_primary_species = ["H2O"]
+
 	state = hd.state(
 		reaction_result=None,
-		primary_species=["H2O"],
+		primary_species=initial_primary_species,
 	)
 
 	make_pflotran_download_button(state)
@@ -210,6 +225,7 @@ def primary_species_column(state):
 							delete_button = hd.icon_button("trash")
 							if delete_button.clicked:
 								state.primary_species = [p for p in state.primary_species if p != species]
+								update_query_string(state)
 
 
 def species_table(title, species_list):
