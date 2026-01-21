@@ -68,27 +68,9 @@ CHEMISTRY
 END'''
 
 
-def main():
-
-	state = hd.state(
-		reaction_result=None,
-		primary_species=["H2O"],
-	)
-
-	if state.reaction_result is not None:
-		pflotran_dialog = hd.dialog("PFLOTRAN Input File")
-		with pflotran_dialog:
-			hd.text("The file below has been copied to your clipboard.", padding_bottom=1)
-			hd.markdown(f'''```{ as_plfotran_file(state.reaction_result) }''')
-
-		with floating_footer(position="fixed", justify="end", direction="horizontal", padding=1):
-			pflotran_download_button = hd.button("PFLOTRAN", prefix_icon="download")
-			if pflotran_download_button.clicked:
-				pflotran_dialog.opened = True
-				hd.clipboard().write(as_plfotran_file(state.reaction_result))
-
-	help_dialog = hd.dialog("About")
-	with help_dialog:
+def make_help_dialog(state):
+	dialog = hd.dialog("About")
+	with dialog:
 		hd.markdown('''
 **Reaction Species Finder** is a web tool for finding secondary species, 
   gases and minerals given a set of primary species.
@@ -102,6 +84,37 @@ Click the **download button** to download your results in a **[PFLOTRAN](https:/
 To clone the source code or leave a comment, visit [our github repo](https://github.com/plichtner/reaction-species-finder).
 
 ''')
+	return dialog
+
+
+def make_pflotran_download_button(state):
+	if state.reaction_result is not None:
+		pflotran_dialog = hd.dialog("PFLOTRAN Input File")
+		with pflotran_dialog:
+			hd.text("The file below has been copied to your clipboard.", padding_bottom=1)
+			hd.markdown(f'''```{ as_plfotran_file(state.reaction_result) }''')
+
+		with floating_footer(position="fixed", justify="end", direction="horizontal", padding=1):
+			pflotran_download_button = hd.button("PFLOTRAN", prefix_icon="download")
+			if pflotran_download_button.clicked:
+				pflotran_dialog.opened = True
+				hd.clipboard().write(as_plfotran_file(state.reaction_result))
+
+
+def update_query_string(state):
+	pass
+
+
+def main():
+
+	state = hd.state(
+		reaction_result=None,
+		primary_species=["H2O"],
+	)
+
+	make_pflotran_download_button(state)
+
+	help_dialog = make_help_dialog(state)
 
 	with hd.box():
 
@@ -174,6 +187,7 @@ def search_column(state):
 						if item.clicked:
 							state.primary_species = state.primary_species + [item.label]
 							species_query.value = ''
+							update_query_string(state)
 
 
 def primary_species_column(state):
