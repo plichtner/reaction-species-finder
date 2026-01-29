@@ -1,6 +1,12 @@
 import hyperdiv as hd
 
-from rxn3_lib_v2 import calculate_reaction, get_matching_aq_species
+from rxn3_lib_v2 import (
+	calculate_reactions,
+	get_matching_aq_species,
+	aq_reaction_info,
+	gas_reaction_info,
+	mineral_reaction_info
+)
 
 
 class floating_footer(hd.box):
@@ -153,7 +159,7 @@ def main():
 				primary_species_column(state)
 
 			if len(state.primary_species) > 0:
-				state.reaction_result = calculate_reaction(state.primary_species)
+				state.reaction_result = calculate_reactions(state.primary_species)
 
 			# Results columns
 			hd.divider(vertical=True, spacing=0)

@@ -16,11 +16,16 @@ def parse_aq_rxn(line):
     parts[3 + 2*k].strip("'").replace("*", "")
     for k in range(num_species)
   ]
+  stochiometry = [ 1 ] + [
+    float(parts[2 + 2*k])
+    for k in range(num_species)
+  ]
 
   return dict(
     name=name,
     num_species=num_species,
-    species=species
+    species=species,
+    stochiometry=stochiometry
   )
 
 def parse_gas_or_mineral_rxn(line):
@@ -31,11 +36,16 @@ def parse_gas_or_mineral_rxn(line):
     parts[4 + 2*k].strip("'").replace("*", "")
     for k in range(num_species)
   ]
+  stochiometry = [ 1 ] + [
+    float(parts[3 + 2*k])
+    for k in range(num_species)
+  ]
 
   return dict(
     name=name,
     num_species=num_species,
-    reactants=reactants
+    reactants=reactants,
+    stochiometry=stochiometry
   )
 
 with open('out/aq_spec.dat','r') as file:
@@ -79,6 +89,7 @@ all_aq_species = sorted(set([
 ]), key=len)
 
 
+
 def get_matching_aq_species(query):
   results = []
   max_num_results = 20
@@ -98,7 +109,32 @@ def get_matching_aq_species(query):
   return results
 
 
-def calculate_reaction(primary_species):
+def aq_reaction_info(name):
+  for rxn in aq_rxns:
+    if rxn['name'] == name:
+      return rxn
+
+
+def mineral_reaction_info(name):
+  for rxn in mineral_rxns:
+    if rxn['name'] == name:
+      return rxn
+
+
+def gas_reaction_info(name):
+  for rxn in gas_rxns:
+    if rxn['name'] == name:
+      return rxn
+
+
+def calculate_reactions(primary_species):
+  '''
+  Returns a dictionary containing:
+  - primary_species: a list of names of the primary species
+  - secondary_species: a list of reactions producing aqueous species
+  - gas_species: a list of reactions producing gas species
+  - mineral_species: a list of reactions producing mineral species
+  '''
 
   # NB: first run "find_values_no_temp_data.py" to generate text input files
   # before setting this flag to true
@@ -145,7 +181,7 @@ def calculate_reaction(primary_species):
 
   #=============== end of examples ==================
 
-  #check for duplicate primary species
+  # check for duplicate primary species
   for pri_spec in primary_species:
     ndup = 0
     ispec = 0
@@ -157,13 +193,13 @@ def calculate_reaction(primary_species):
           print ('Error: duplicate primary species:',ispec,pri_spec) 
           exit("Run Stopped")
 
-  #check for presence of H2O in list of primary species
+  # check for presence of H2O in list of primary species
   if 'H2O' not in primary_species:
     print ('Error: H2O missing from list of primary species!')
     exit("Run Stopped")
 
 
-  def accumulate_secondary_species(primary_species, secondary_species):
+  def accumulate_secondary_species(primary_species, secondary_species=[]):
     found_a_new_secondary_species = False
     all_species_so_far = primary_species + secondary_species
     for rxn in aq_rxns:
@@ -178,12 +214,12 @@ def calculate_reaction(primary_species):
         found_a_new_secondary_species = True
 
     if found_a_new_secondary_species:
-      primary_species, secondary_species = accumulate_secondary_species(primary_species, secondary_species)
+      secondary_species = accumulate_secondary_species(primary_species, secondary_species)
 
-    return [primary_species, secondary_species]
+    return secondary_species
 
 
-  primary_species, secondary_species = accumulate_secondary_species(primary_species, [])
+  secondary_species = accumulate_secondary_species(primary_species)
 
   # delete duplicates
   secondary_species = list(set(secondary_species))
@@ -195,8 +231,8 @@ def calculate_reaction(primary_species):
   all_reactants = primary_species + secondary_species
 
   gas_species = [
-    rxn['name'] for rxn in gas_rxns
-    if all([(reactant in all_reactants) for reactant in rxn['reactants']])
+    gas_rxn['name'] for gas_rxn in gas_rxns
+    if set(gas_rxn['reactants']).issubset(all_reactants)
   ]
 
   #
@@ -204,8 +240,8 @@ def calculate_reaction(primary_species):
   #
 
   mineral_species = [
-    rxn['name'] for rxn in mineral_rxns
-    if all([(reactant in all_reactants) for reactant in rxn['reactants']])
+    mineral_rxn['name'] for mineral_rxn in mineral_rxns
+    if set(mineral_rxn['reactants']).issubset(all_reactants)
   ]
 
   # exclude O2(g) from secondaries -- we already have O2(aq)
@@ -220,17 +256,20 @@ def calculate_reaction(primary_species):
 
 
 if __name__ == '__main__':
-  # calculate_reaction(['A(aq)', 'B(aq)', 'H2O'])
-  # calculate_reaction(['AB(aq)', 'B(aq)', 'H2O'])
-  # calculate_reaction(['A(aq)', 'A(aq)', 'H2O'])
-  # result = calculate_reaction(['UO2++','U+++', 'H+', 'O2(aq)', 'H2O'])
-  result = calculate_reaction([
-    'Na+', 'K+', 'Ca++', 'H+', 'Cu++', 'Al+++',
-    'Fe++', 'SiO2(aq)', 'HCO3-', 'SO4--', 'Cl-',
-    'O2(aq)', 'H2O'
+  # calculate_reactions(['A(aq)', 'B(aq)', 'H2O'])
+  # calculate_reactions(['AB(aq)', 'B(aq)', 'H2O'])
+  # calculate_reactions(['A(aq)', 'A(aq)', 'H2O'])
+  # result = calculate_reactions(['UO2++','U+++', 'H+', 'O2(aq)', 'H2O'])
+  # result = calculate_reactions([
+  #   'Na+', 'K+', 'Ca++', 'H+', 'Cu++', 'Al+++',
+  #   'Fe++', 'SiO2(aq)', 'HCO3-', 'SO4--', 'Cl-',
+  #   'O2(aq)', 'H2O'
+  # ])
+  result = calculate_reactions([
+    'OH-', 'Al(OH)4-', 'SO4--', 'Ca++', 'H2O'
   ])
-  # calculate_reaction(['OH-', 'Al(OH)4-', 'H2O'])
-  # result = calculate_reaction(['OH-', 'Al(OH)4-', 'H2O'])
+  # calculate_reactions(['OH-', 'Al(OH)4-', 'H2O'])
+  # result = calculate_reactions(['OH-', 'Al(OH)4-', 'H2O'])
   
   print("PRIMARY_SPECIES")
   print('\n'.join(result['primary_species']))

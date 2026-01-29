@@ -1,4 +1,4 @@
-from rxn3_lib_v2 import calculate_reaction
+from rxn3_lib_v2 import calculate_reactions
 
 tests = [
 	dict(
@@ -111,7 +111,7 @@ tests = [
 ]
 
 for test in tests:
-	result = calculate_reaction(test['primary'])
+	result = calculate_reactions(test['primary'])
 
 	secondary_correct = set(result['secondary_species']) == set(test['secondary'])
 	gas_correct = set(result['gas_species']) == set(test['gas'])
