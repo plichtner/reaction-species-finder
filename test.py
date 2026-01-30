@@ -53,7 +53,7 @@ tests = [
 	        'Schoepite-dehy(.648)', 'Schoepite-dehy(.85)', 
 	        'Schoepite-dehy(.9)', 'Schoepite-dehy(1.0)', 
 	        'UO2(am)', 'UO2.3333(beta)', 'UO2.6667', 'Uraninite',
-	        'UO2.25', 'UO2.25(beta)'
+	        'Uraninite*', 'UO2.25', 'UO2.25(beta)'
 	    ]
 	),
 	dict(
