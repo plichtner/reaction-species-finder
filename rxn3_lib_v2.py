@@ -285,6 +285,15 @@ def calculate_reactions(primary_species):
   # exclude O2(g) from secondaries -- we already have O2(aq)
   secondary_species = [rxn for rxn in secondary_species if rxn['name'] != "O2(g)"]
 
+
+  # TODO:
+  # Build stochiometry matrix, one column per reaction
+  # sort so that primaries go on the bottom
+  # calculate inverse of primaries subset
+  # multiply stochiometry matrix by inverse
+  # read out new stochiometries in new basis
+
+
   return dict(
     primary_species=sorted(primary_species),
     secondary_species=sorted(secondary_species, key=lambda d: d['name']),
