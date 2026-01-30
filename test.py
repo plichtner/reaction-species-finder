@@ -38,9 +38,9 @@ tests = [
 	),
 	dict(
 	    description="Collecting secondary species from a second pass works",
-	    primary=['UO2++','U+++', 'H+', 'O2(aq)', 'H2O'],
+	    primary=['UO2++', 'H+', 'O2(aq)', 'H2O'],
 	    secondary=[
-	        'H2(aq)', 'U++++',
+	        'H2(aq)', 'U+++', 'U++++',
 	        '(UO2)2(OH)2++', '(UO2)2OH+++', '(UO2)3(OH)4++', 
 	        '(UO2)3(OH)5+', '(UO2)3(OH)7-', '(UO2)4(OH)7+', 
 	        'HO2-', 'OH-', 'UO2(OH)2(aq)', 'UO2(OH)3-', 
@@ -113,7 +113,7 @@ tests = [
 for test in tests:
 	result = calculate_reactions(test['primary'])
 
-	secondary_correct = set(result['secondary_species']) == set(test['secondary'])
+	secondary_correct = set([rxn['name'] for rxn in result['secondary_species']]) == set(test['secondary'])
 	gas_correct = set(result['gas_species']) == set(test['gas'])
 	mineral_correct = set(result['mineral_species']) == set(test['mineral'])
 	all_correct = secondary_correct and gas_correct and mineral_correct
@@ -125,7 +125,7 @@ for test in tests:
 
 		if not secondary_correct:
 			print(f"Expected {len(test['secondary'])} secondary species {sorted(test['secondary'])}")
-			print(f"Got {len(result['secondary_species'])} secondary species {sorted(result['secondary_species'])}")
+			print(f"Got {len(result['secondary_species'])} secondary species {sorted([rxn['name'] for rxn in result['secondary_species']])}")
 
 		if not gas_correct:
 			print(f"Expected {len(test['gas'])} gas species {sorted(test['gas'])}")

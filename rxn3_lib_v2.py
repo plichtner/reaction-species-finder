@@ -10,10 +10,12 @@ import time
 
 def parse_aq_rxn(line):
   parts = line.split()
-  name = parts[0].strip("'").replace("*", "")
+  # name = parts[0].strip("'").replace("*", "")
+  name = parts[0].strip("'")
   num_species = int(parts[1].strip())
   species = [ name ] + [
-    parts[3 + 2*k].strip("'").replace("*", "")
+    # parts[3 + 2*k].strip("'").replace("*", "")
+    parts[3 + 2*k].strip("'")
     for k in range(num_species)
   ]
   stochiometry = [ 1 ] + [
@@ -33,7 +35,8 @@ def parse_gas_or_mineral_rxn(line):
   name = parts[0].strip("'")
   num_species = int(parts[2].strip())
   reactants = [
-    parts[4 + 2*k].strip("'").replace("*", "")
+    # parts[4 + 2*k].strip("'").replace("*", "")
+    parts[4 + 2*k].strip("'")
     for k in range(num_species)
   ]
   stochiometry = [ 1 ] + [
@@ -47,6 +50,15 @@ def parse_gas_or_mineral_rxn(line):
     reactants=reactants,
     stochiometry=stochiometry
   )
+
+
+def aq_rxn_to_string(rxn):
+  reactants = " + ".join([
+    f"{rxn['stochiometry'][i]} {rxn['species'][i]}"
+    for i in range(1, len(rxn['species']))
+  ])
+  return f"{rxn['name']} ⇋ {reactants}"
+
 
 with open('out/aq_spec.dat','r') as file:
   aq_rxns = [parse_aq_rxn(line.strip()) for line in file.readlines()]
@@ -200,8 +212,20 @@ def calculate_reactions(primary_species):
 
 
   def accumulate_secondary_species(primary_species, secondary_species=[]):
+    '''
+    This is the meat of our algorithm. Given a list of primary and secondary
+    species, we look through the list of aq_rxns for matching reactions
+    and accumulate them in the list of secondary species. This process is
+    repeated until no new reactions are found.
+    '''
+    
     found_a_new_secondary_species = False
-    all_species_so_far = primary_species + secondary_species
+    all_species_so_far = primary_species + [
+      rxn['name']
+      for rxn in secondary_species
+    ]
+    # all_species_so_far = primary_species + secondary_species
+    
     for rxn in aq_rxns:
       # if exactly 1 species in rxn missing from what we've accumulated so far:
       missing_species = [
@@ -210,7 +234,8 @@ def calculate_reactions(primary_species):
       ]
 
       if len(missing_species) == 1:
-        secondary_species += missing_species
+        # secondary_species += missing_species
+        secondary_species += [dict(name=missing_species[0], rxn=rxn)]
         found_a_new_secondary_species = True
 
     if found_a_new_secondary_species:
@@ -221,14 +246,23 @@ def calculate_reactions(primary_species):
 
   secondary_species = accumulate_secondary_species(primary_species)
 
-  # delete duplicates
-  secondary_species = list(set(secondary_species))
+  # duplicate check
+  secondary_species_names = [rxn['name'] for rxn in secondary_species]
+  if (len(list(set(secondary_species_names))) != len(secondary_species_names)):
+    print("Uh oh. Somehow we accumulated the same secondary species twice:")
+    print(f"Primary species: {', '.join(primary_species)}")
+    for rxn in sorted(secondary_species, key=lambda d: d['name']):
+      print(rxn['name'] + ": " + aq_rxn_to_string(rxn['rxn']))
+    print("That should not happen if the reactions in the database are non-redundant.")
 
   # 
   # Gas Species
   # 
 
-  all_reactants = primary_species + secondary_species
+  all_reactants = primary_species + [rxn['name'] for rxn in secondary_species]
+
+  # if 'O2(aq)' in all_reactants:
+  #   all_reactants += ['O2(g)']
 
   gas_species = [
     gas_rxn['name'] for gas_rxn in gas_rxns
@@ -245,11 +279,11 @@ def calculate_reactions(primary_species):
   ]
 
   # exclude O2(g) from secondaries -- we already have O2(aq)
-  secondary_species = [s for s in secondary_species if s != "O2(g)"]
+  secondary_species = [rxn for rxn in secondary_species if rxn['name'] != "O2(g)"]
 
   return dict(
     primary_species=sorted(primary_species),
-    secondary_species=sorted(secondary_species),
+    secondary_species=sorted(secondary_species, key=lambda d: d['name']),
     gas_species=sorted(gas_species),
     mineral_species=sorted(mineral_species),
   )
