@@ -12,50 +12,54 @@ def parse_aq_rxn(line):
   parts = line.split()
   # name = parts[0].strip("'").replace("*", "")
   name = parts[0].strip("'")
-  num_species = int(parts[1].strip())
-  species = [ name ] + [
+  num_basis_species = int(parts[1].strip())
+  basis_species = [
     # parts[3 + 2*k].strip("'").replace("*", "")
     parts[3 + 2*k].strip("'")
-    for k in range(num_species)
+    for k in range(num_basis_species)
   ]
+  all_species = [ name ] + basis_species
   stochiometry = [ 1 ] + [
     float(parts[2 + 2*k])
-    for k in range(num_species)
+    for k in range(num_basis_species)
   ]
 
   return dict(
     name=name,
-    num_species=num_species,
-    species=species,
+    num_basis_species=num_basis_species,
+    basis_species=basis_species,
+    all_species=all_species,
     stochiometry=stochiometry
   )
 
 def parse_gas_or_mineral_rxn(line):
   parts = line.split()
   name = parts[0].strip("'")
-  num_species = int(parts[2].strip())
-  reactants = [
+  num_basis_species = int(parts[2].strip())
+  basis_species = [
     # parts[4 + 2*k].strip("'").replace("*", "")
     parts[4 + 2*k].strip("'")
-    for k in range(num_species)
+    for k in range(num_basis_species)
   ]
+  all_species = [ name ] + basis_species
   stochiometry = [ 1 ] + [
     float(parts[3 + 2*k])
-    for k in range(num_species)
+    for k in range(num_basis_species)
   ]
 
   return dict(
     name=name,
-    num_species=num_species,
-    reactants=reactants,
+    num_basis_species=num_basis_species,
+    basis_species=basis_species,
+    all_species=all_species,
     stochiometry=stochiometry
   )
 
 
-def aq_rxn_to_string(rxn):
+def rxn_to_string(rxn):
   reactants = " + ".join([
-    f"{rxn['stochiometry'][i]} {rxn['species'][i]}"
-    for i in range(1, len(rxn['species']))
+    f"{rxn['stochiometry'][i]} {rxn['all_species'][i]}"
+    for i in range(1, len(rxn['all_species']))
   ])
   return f"{rxn['name']} ⇋ {reactants}"
 
@@ -97,7 +101,7 @@ mineral_rxns = [
 all_aq_species = sorted(set([
   species
   for rxn in aq_rxns
-  for species in rxn['species']
+  for species in rxn['all_species']
 ]), key=len)
 
 
@@ -229,7 +233,7 @@ def calculate_reactions(primary_species):
     for rxn in aq_rxns:
       # if exactly 1 species in rxn missing from what we've accumulated so far:
       missing_species = [
-        species for species in rxn['species']
+        species for species in rxn['all_species']
         if species not in all_species_so_far
       ]
 
@@ -252,7 +256,7 @@ def calculate_reactions(primary_species):
     print("Uh oh. Somehow we accumulated the same secondary species twice:")
     print(f"Primary species: {', '.join(primary_species)}")
     for rxn in sorted(secondary_species, key=lambda d: d['name']):
-      print(rxn['name'] + ": " + aq_rxn_to_string(rxn['rxn']))
+      print(rxn['name'] + ": " + rxn_to_string(rxn['rxn']))
     print("That should not happen if the reactions in the database are non-redundant.")
 
   # 
@@ -266,7 +270,7 @@ def calculate_reactions(primary_species):
 
   gas_species = [
     gas_rxn['name'] for gas_rxn in gas_rxns
-    if set(gas_rxn['reactants']).issubset(all_reactants)
+    if set(gas_rxn['basis_species']).issubset(all_reactants)
   ]
 
   #
@@ -275,7 +279,7 @@ def calculate_reactions(primary_species):
 
   mineral_species = [
     mineral_rxn['name'] for mineral_rxn in mineral_rxns
-    if set(mineral_rxn['reactants']).issubset(all_reactants)
+    if set(mineral_rxn['basis_species']).issubset(all_reactants)
   ]
 
   # exclude O2(g) from secondaries -- we already have O2(aq)
