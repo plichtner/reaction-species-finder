@@ -32,4 +32,4 @@ def split_hanford_file(input_file):
 
 # Run the function
 if __name__ == '__main__':
-    split_hanford_file('hanford_rev1.dat')
+    split_hanford_file('hanford.dat')
