@@ -1,11 +1,9 @@
 import hyperdiv as hd
+import re
 
 from rxn3_lib_v2 import (
 	calculate_reactions,
-	get_matching_aq_species,
-	aq_reaction_info,
-	gas_reaction_info,
-	mineral_reaction_info
+	get_matching_aq_species
 )
 
 
@@ -60,15 +58,15 @@ CHEMISTRY
   END
 
   SECONDARY_SPECIES
-  	{ '\n    '.join(reaction_result['secondary_species']) }
+  	{ '\n    '.join([rxn['name'] for rxn in reaction_result['secondary_species']]) }
   END
 
   PASSIVE_GAS_SPECIES
-  	{ '\n    '.join(reaction_result['gas_species']) }
+  	{ '\n    '.join([rxn['name'] for rxn in reaction_result['gas_species']]) }
   END
 
   MINERALS
-  	{ '\n    '.join(reaction_result['mineral_species']) }
+  	{ '\n    '.join([rxn['name'] for rxn in reaction_result['mineral_species']]) }
   END
 
 END'''
@@ -166,21 +164,21 @@ def main():
 			
 			# Secondary species
 			with hd.box(gap=1):
-				species_list = sorted(state.reaction_result['secondary_species'])
+				species_list = state.reaction_result['secondary_species']
 				title = f"Secondary Species ({len(species_list)})"
-				species_table(title, species_list)
+				species_table(title, species_list, 'aq')
 
 			# Gas Species
 			with hd.box(gap=1):
-				species_list = sorted(state.reaction_result['gas_species'])
+				species_list = state.reaction_result['gas_species']
 				title = f"Passive Gas Species ({len(species_list)})"
-				species_table(title, species_list)
+				species_table(title, species_list, 'gas')
 
 			# Mineral Species
 			with hd.box(gap=1):
-				species_list = sorted(state.reaction_result['mineral_species'])
+				species_list = state.reaction_result['mineral_species']
 				title = f"Mineral Species ({len(species_list)})"
-				species_table(title, species_list)
+				species_table(title, species_list, 'mineral')
 
 
 def search_column(state):
@@ -206,7 +204,7 @@ def search_column(state):
 					# print(species)
 						item = hd.menu_item(species)
 						if item.clicked:
-							state.primary_species = state.primary_species + [item.label]
+							state.primary_species = state.primary_species + [species]
 							species_query.value = ''
 							update_query_string(state)
 
@@ -226,7 +224,7 @@ def primary_species_column(state):
 				
 				with hd.box_list_item(padding=0.5, border_top="1px solid neutral-200", border_left="1px solid neutral-200", border_right="1px solid neutral-200", border_bottom=border_bottom):
 					with hd.hbox(justify="space-between", align="center"):
-						hd.text(species)
+						hd.markdown(format_species_name(species))
 						if species != "H2O":
 							delete_button = hd.icon_button("trash")
 							if delete_button.clicked:
@@ -234,14 +232,61 @@ def primary_species_column(state):
 								update_query_string(state)
 
 
-def species_table(title, species_list):
+def format_species_name(name):
+	number_pattern = re.compile(r'\d?(\(aq\))?(\(g\))?')  # integers and decimals, optional leading '-'
+
+	def wrap_with_sub(match):
+		return f"<sub>{match.group(0)}</sub>"
+
+	def wrap_with_sup(match):
+		return f"<sup>{match.group(0)}</sup>"
+
+	def surround_numbers(text):
+		return number_pattern.sub(wrap_with_sub, text)
+
+	plus_minus_pattern = re.compile(r'[\+\-]')
+
+	def surround_plus_and_minus(text):
+		return plus_minus_pattern.sub(wrap_with_sup, text)
+
+	return surround_plus_and_minus(surround_numbers(name))
+
+
+def species_table(title, rxn_list, type):
 	with hd.box_list():
 		hd.box_list_item(title, font_weight="bold", background_color="neutral-200", padding=0.5, border="1px solid neutral-200")
-		for i, species in enumerate(species_list):
+		for i, rxn in enumerate(rxn_list):
 			with hd.scope(i):
-				if i == (len(species_list) - 1):
-					hd.box_list_item(species, padding=0.5, border="1px solid neutral-200")
+				if i == (len(rxn_list) - 1):
+					box_item = hd.box_list_item(padding=0.5, border="1px solid neutral-200")
 				else:
-					hd.box_list_item(species, padding=0.5, border_top="1px solid neutral-200", border_left="1px solid neutral-200", border_right="1px solid neutral-200")
+					box_item = hd.box_list_item(padding=0.5, border_top="1px solid neutral-200", border_left="1px solid neutral-200", border_right="1px solid neutral-200")
+				with box_item:
+					with hd.hbox(justify="space-between", align="center") as wrapper_box:
+						text = hd.markdown(format_species_name(rxn['name']))
+						with hd.tooltip() as tooltip:
+							with hd.box(slot=tooltip.content_slot, padding=2):
+								reactants = ""
+								for i in range(1, len(rxn['all_species'])):
+									abs_stochiometry = abs(rxn['stochiometry'][i])
+									stochiometry = f"{abs_stochiometry:g} "
+									sign = "+" if rxn['stochiometry'][i] > 0 else "–"
+									if i == 1 and sign == "+":
+										sign = ""
+									if rxn['stochiometry'][i] == 1 or rxn['stochiometry'][i] == -1:
+										stochiometry = ""
+									reactants += f" {sign} {stochiometry}{format_species_name(rxn['all_species'][i])}"
+								hd.markdown(f"{format_species_name(rxn['name'])} ⇋ {reactants}")
+							info_button = hd.icon_button("info-square")
+							# if info_button.clicked:
+							# 	print(rxn)
 
-hd.run(main)
+					# with hd.popup(wrapper_box, distance=10, arrow=True, arrow_color="pink", strategy="fixed", sync="none") as popup:
+					# 	with hd.box(padding=1, background_color="pink"):
+					# 		hd.text("HelloHelloHelloHelloHelloHelloHelloHelloHelloHelloHello")
+					# if info_button.clicked:
+					# 	popup.opened = not popup.opened
+
+hd.run(main, index_page=hd.index_page(
+	css_assets=['/assets/properties.css']
+))

@@ -1,6 +1,6 @@
 import sys
 #from numpy import *
-#import numpy as np
+import numpy as np
 #import numpy
 #import scipy
 #import matplotlib
@@ -19,7 +19,7 @@ def parse_aq_rxn(line):
     for k in range(num_basis_species)
   ]
   all_species = [ name ] + basis_species
-  stochiometry = [ 1 ] + [
+  stochiometry = [ -1 ] + [
     float(parts[2 + 2*k])
     for k in range(num_basis_species)
   ]
@@ -42,7 +42,7 @@ def parse_gas_or_mineral_rxn(line):
     for k in range(num_basis_species)
   ]
   all_species = [ name ] + basis_species
-  stochiometry = [ 1 ] + [
+  stochiometry = [ -1 ] + [
     float(parts[3 + 2*k])
     for k in range(num_basis_species)
   ]
@@ -83,24 +83,28 @@ with open('min_skip.dat','r') as file:
 # Filter out reactions listed in faq_skip, fgas_skip, fmin_skip
 # 
 
-aq_rxns = [
+db_aq_rxns = [
   rxn for rxn in aq_rxns
   if rxn['name'] not in faq_skip
 ]
 
-gas_rxns = [
+db_gas_rxns = [
   rxn for rxn in gas_rxns
   if rxn['name'] not in fgas_skip
 ]
 
-mineral_rxns = [
+db_gas_names = [rxn['name'] for rxn in db_gas_rxns]
+
+db_mineral_rxns = [
   rxn for rxn in mineral_rxns
   if rxn['name'] not in fmin_skip
 ]
 
+db_mineral_names = [rxn['name'] for rxn in db_mineral_rxns]
+
 all_aq_species = sorted(set([
   species
-  for rxn in aq_rxns
+  for rxn in db_aq_rxns
   for species in rxn['all_species']
 ]), key=len)
 
@@ -123,24 +127,6 @@ def get_matching_aq_species(query):
   # print(results)
 
   return results
-
-
-def aq_reaction_info(name):
-  for rxn in aq_rxns:
-    if rxn['name'] == name:
-      return rxn
-
-
-def mineral_reaction_info(name):
-  for rxn in mineral_rxns:
-    if rxn['name'] == name:
-      return rxn
-
-
-def gas_reaction_info(name):
-  for rxn in gas_rxns:
-    if rxn['name'] == name:
-      return rxn
 
 
 def calculate_reactions(primary_species):
@@ -230,7 +216,7 @@ def calculate_reactions(primary_species):
     ]
     # all_species_so_far = primary_species + secondary_species
     
-    for rxn in aq_rxns:
+    for rxn in db_aq_rxns:
       # if exactly 1 species in rxn missing from what we've accumulated so far:
       missing_species = [
         species for species in rxn['all_species']
@@ -269,7 +255,7 @@ def calculate_reactions(primary_species):
   #   all_reactants += ['O2(g)']
 
   gas_species = [
-    gas_rxn['name'] for gas_rxn in gas_rxns
+    gas_rxn for gas_rxn in db_gas_rxns
     if set(gas_rxn['basis_species']).issubset(all_reactants)
   ]
 
@@ -278,27 +264,127 @@ def calculate_reactions(primary_species):
   #
 
   mineral_species = [
-    mineral_rxn['name'] for mineral_rxn in mineral_rxns
+    mineral_rxn for mineral_rxn in db_mineral_rxns
     if set(mineral_rxn['basis_species']).issubset(all_reactants)
   ]
 
   # exclude O2(g) from secondaries -- we already have O2(aq)
-  secondary_species = [rxn for rxn in secondary_species if rxn['name'] != "O2(g)"]
+  # secondary_rxns = [rxn for rxn in secondary_species if rxn['name'] != "O2(g)"]
+  secondary_rxns = secondary_species
+  gas_rxns = [rxn for rxn in gas_species if rxn['name'] != "O2(g)"]
+  mineral_rxns = mineral_species
 
+  primary_species = sorted(primary_species)
+  secondary_rxns = sorted(secondary_rxns, key=lambda d: d['name'])
+  gas_rxns = sorted(gas_rxns, key=lambda d: d['name'])
+  mineral_rxns = sorted(mineral_species, key=lambda d: d['name'])
 
-  # TODO:
-  # Build stochiometry matrix, one column per reaction
-  # sort so that primaries go on the bottom
-  # calculate inverse of primaries subset
-  # multiply stochiometry matrix by inverse
+  # print(primary_species)
+  # print([rxn['name'] for rxn in secondary_rxns])
+  # print([rxn['name'] for rxn in gas_rxns])
+  # print([rxn['name'] for rxn in mineral_rxns])
+
+  num_rows = len(primary_species) + len(secondary_rxns) + len(gas_rxns) + len(mineral_rxns)
+  num_cols = len(secondary_rxns) + len(gas_rxns) + len(mineral_rxns)
+
+  all_species = (
+    primary_species +
+    [rxn['name'] for rxn in secondary_rxns] +
+    [rxn['name'] for rxn in gas_rxns] +
+    [rxn['name'] for rxn in mineral_rxns]
+  )
+
+  all_reactions = (
+    [rxn['rxn'] for rxn in secondary_rxns] +
+    gas_rxns +
+    mineral_rxns
+  )
+
+  stochiometry_matrix = np.zeros((num_rows, num_cols))
+  # print(stochiometry_matrix.shape)
+  for row in range(len(all_species)):
+    for col in range(len(all_reactions)):
+      species = all_species[row]
+      rxn = all_reactions[col]
+      try:
+        stochiometry_idx = rxn['all_species'].index(species)
+        stochiometry_matrix[row, col] = rxn['stochiometry'][stochiometry_idx]
+      except ValueError as e:
+        pass
+
+  # print(stochiometry_matrix)
+  # print()
+  secondary_matrix = stochiometry_matrix[len(primary_species):, :]
+
+  inverse_matrix = np.linalg.inv(secondary_matrix)
+  # print(inverse_matrix)
+  # print()
+  
+  new_basis_matrix = (stochiometry_matrix @ inverse_matrix).round(4)
+
+  # print(new_basis_matrix)
+
   # read out new stochiometries in new basis
+  transformed_reactions = []
+  for row in range(len(primary_species), len(all_species)):
+    secondary_name = all_species[row]
+    col = row - len(primary_species)
+    stochiometry = -1 * new_basis_matrix[0:len(primary_species), col]
+    new_basis_species = [
+      s for i, s in enumerate(primary_species)
+      if stochiometry[i] != 0.0
+    ]
+    stochiometry = [x for x in stochiometry if x != 0.0]
+    
+    transformed_secondary = dict(
+      name=secondary_name,
+      num_basis_species=len(new_basis_species),
+      basis_species=new_basis_species,
+      all_species=[secondary_name] + new_basis_species,
+      stochiometry=[-1] + list(stochiometry)
+    )
 
+    transformed_reactions.append(transformed_secondary)
+
+  transformed_aq_rxns = []
+  transformed_gas_rxns = []
+  transformed_mineral_rxns = []
+  
+  for rxn in transformed_reactions:
+    if rxn['name'] in db_mineral_names:
+      transformed_mineral_rxns.append(rxn)
+    elif rxn['name'] in db_gas_names:
+      transformed_gas_rxns.append(rxn)
+    else:
+      transformed_aq_rxns.append(rxn)
+
+  # print()
+  # print("NEW BASIS:")
+  # print(' ,'.join(primary_species))
+  # print()
+
+  # print("BEFORE TRANSFORMATION:")
+  # for rxn in sorted(secondary_rxns, key=lambda d: d['name']):
+  #   print(rxn['name'] + ": " + rxn_to_string(rxn['rxn']))
+
+  # print()
+  # print("AFTER TRANSFORMATION:")
+  # print("\nAQUEOUS:")
+  # for rxn in transformed_aq_rxns:
+  #   print(rxn_to_string(rxn))
+  # print("\nGAS:")
+  # for rxn in transformed_gas_rxns:
+  #   print(rxn_to_string(rxn))
+  # print("\nMINERAL:")
+  # for rxn in transformed_mineral_rxns:
+  #   print(rxn_to_string(rxn))
+  # print()
 
   return dict(
     primary_species=sorted(primary_species),
-    secondary_species=sorted(secondary_species, key=lambda d: d['name']),
-    gas_species=sorted(gas_species),
-    mineral_species=sorted(mineral_species),
+    secondary_species=sorted(transformed_aq_rxns, key=lambda d: d['name']),
+    gas_species=sorted(transformed_gas_rxns, key=lambda d: d['name']),
+    mineral_species=sorted(transformed_mineral_rxns, key=lambda d: d['name']),
   )
 
 

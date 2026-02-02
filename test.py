@@ -113,9 +113,18 @@ tests = [
 for test in tests:
 	result = calculate_reactions(test['primary'])
 
-	secondary_correct = set([rxn['name'] for rxn in result['secondary_species']]) == set(test['secondary'])
-	gas_correct = set(result['gas_species']) == set(test['gas'])
-	mineral_correct = set(result['mineral_species']) == set(test['mineral'])
+	secondary_correct = (
+		set([rxn['name'] for rxn in result['secondary_species']]) == 
+		set(test['secondary'])
+	)
+	gas_correct = (
+		set([rxn['name'] for rxn in result['gas_species']]) ==
+		set(test['gas'])
+	)
+	mineral_correct = (
+		set([rxn['name'] for rxn in result['mineral_species']]) ==
+		set(test['mineral'])
+	)
 	all_correct = secondary_correct and gas_correct and mineral_correct
 	
 	if not all_correct:
@@ -138,6 +147,10 @@ for test in tests:
 	else:
 		print("TEST PASSED")
 		print(test['description'])
+		# print(test['primary'])
+		# print(test['secondary'])
+		# print(test['gas'])
+		# print(test['mineral'])
 	
 	print()
 
