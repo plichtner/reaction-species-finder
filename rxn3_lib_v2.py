@@ -23,13 +23,17 @@ def parse_aq_rxn(line):
     float(parts[2 + 2*k])
     for k in range(num_basis_species)
   ]
+  log_k_start = 3 + 2 * (num_basis_species - 1) + 1
+  log_ks = parts[log_k_start:log_k_start+8]
+  log_ks = [float(k) for k in log_ks]
 
   return dict(
     name=name,
     num_basis_species=num_basis_species,
     basis_species=basis_species,
     all_species=all_species,
-    stochiometry=stochiometry
+    stochiometry=stochiometry,
+    log_ks=log_ks,
   )
 
 def parse_gas_or_mineral_rxn(line):
@@ -46,13 +50,17 @@ def parse_gas_or_mineral_rxn(line):
     float(parts[3 + 2*k])
     for k in range(num_basis_species)
   ]
+  log_k_start = 4 + 2 * (num_basis_species - 1) + 1
+  log_ks = parts[log_k_start:log_k_start+8]
+  log_ks = [500.0 if k == '500.d0' else float(k) for k in log_ks]
 
   return dict(
     name=name,
     num_basis_species=num_basis_species,
     basis_species=basis_species,
     all_species=all_species,
-    stochiometry=stochiometry
+    stochiometry=stochiometry,
+    log_ks=log_ks,
   )
 
 
