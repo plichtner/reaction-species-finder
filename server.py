@@ -265,7 +265,7 @@ def species_table(title, rxn_list, type):
 					with hd.hbox(justify="space-between", align="center") as wrapper_box:
 						text = hd.markdown(format_species_name(rxn['name']))
 						with hd.tooltip() as tooltip:
-							with hd.box(slot=tooltip.content_slot, padding=2):
+							with hd.box(slot=tooltip.content_slot, padding=1):
 								reactants = ""
 								for i in range(1, len(rxn['all_species'])):
 									abs_stochiometry = abs(rxn['stochiometry'][i])
